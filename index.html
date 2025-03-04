@@ -129,33 +129,28 @@ body *::-webkit-scrollbar {
   background-color: #fff;
 }
 #Home {
-  border-radius: 0px;
-  background-color: #fff;
-  overflow: hidden;
-  width: 100%;
-  min-width: 100%;
-  max-width: 100%;
-  min-height: 100%;
-  max-height: 100%;
-  position: relative;
-  margin: 0px auto;
+border-radius: 0;
+background-color: #fff;
+overflow: hidden;
+width: 100%;
+min-height: 6075px; /* You might want to adjust this /
+position: relative;
+margin: 0 auto;
 }
 #Background {
-  --f2w-order: 0;
-  left: 0px;
-  top: 113px;
-  width: 100%;
-  height: 100%;
-  position: absolute;
+left: 0;
+top: 113px;
+width: 100%;
+position: absolute;
 }
 #Social_Icons {
-  --f2w-order: 1;
-  left: 379px;
-  top: 5782px;
-  width: 89.6px;
-  height: 56px;
-  position: absolute;
+left: 20%; / Adjusting to a relative position /
+top: 90%; / Adjusting to a lower position /
+width: auto; / Let it scale /
+height: auto; / Let it scale /
+position: absolute;
 }
+
 #linkedin_1 {
   overflow: hidden;
   border-radius: 0px;
@@ -236,24 +231,23 @@ body *::-webkit-scrollbar {
   object-fit: cover;
 }
 #_1_231 {
-  display: inline-flex;
-  text-align: left;
-  font-size: 15px;
-  font-family: "Pixelify Sans";
-  font-weight: 400;
-  overflow-wrap: break-word;
-  letter-spacing: 0.3px;
-  color: #fff;
-  -webkit-background-clip: text;
-  background-clip: text;
-  align-items: center;
-  justify-content: flex-start;
-  --f2w-order: 4;
-  left: 20px;
-  top: 3px;
-  width: 56px;
-  height: 14px;
-  position: absolute;
+display: inline-flex;
+text-align: left;
+font-size: 15px;
+font-family: "Pixelify Sans";
+font-weight: 400;
+overflow-wrap: break-word;
+letter-spacing: 0.3px;
+color: #fff;
+-webkit-background-clip: text;
+background-clip: text;
+align-items: center;
+justify-content: flex-start;
+left: 20px;
+top: 3px;
+width: auto; / Let it scale /
+height: auto; / Let it scale /
+position: absolute;
 }
 #__4 {
   font-size: 15px;
@@ -337,24 +331,23 @@ body *::-webkit-scrollbar {
   background-clip: text;
 }
 #Chenso_Club {
-  --f2w-order: 4;
-  left: 418px;
-  top: 4928px;
-  width: 1367px;
-  height: 700px;
-  position: absolute;
+left: 10%; / Relative position /
+top: 70%; / Relative position /
+width: 80%; / Let it scale /
+height: auto; / Let it scale according to content /
+position: absolute;
 }
 #Gradient {
-  border-radius: 50%;
-  background-image: radial-gradient(ellipse 50% 50% at 50% 50%, #763cac 0%, rgba(50,15,133,0) 100%);
-  background-blend-mode: normal;
-  --f2w-order: 0;
-  left: 741px;
-  top: 0px;
-  width: 626px;
-  height: 700px;
-  position: absolute;
+border-radius: 50%;
+background-image: radial-gradient(ellipse 50% 50% at 50% 50%, #763cac 0%, rgba(50, 15, 133, 0) 100%);
+left: 50%;
+top: 0;
+width: 80%; / Let it scale /
+height: auto; / Let it scale */
+position: absolute;
+transform: translateX(-50%);
 }
+
 #Portfolio {
   --f2w-order: 1;
   left: 588.2px;
