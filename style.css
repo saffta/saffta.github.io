@@ -92,11 +92,14 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
+    position: relative;
 }
 
 .logo {
+    position: absolute;
+    left: 0;
     font-family: var(--font-pixel);
     font-size: 1.2rem;
     color: var(--accent-color);
@@ -521,13 +524,26 @@ section {
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
-    .header { height: 60px; }
-    .nav-links { display: none; }
+    .header { height: auto; padding: 15px 0; }
+    .nav-container {
+        flex-direction: column;
+        justify-content: center;
+        gap: 15px;
+    }
+    .logo {
+        position: static;
+    }
+    .nav-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+    }
     .hero h1 { font-size: 2.5rem; }
     .subtitle { font-size: 0.9rem; }
     .section-title { font-size: 1.5rem; }
     .project-grid { grid-template-columns: 1fr; }
-    .hero { padding-top: 80px; }
+    .hero { padding-top: 120px; }
 }
 
 /* Sub-page Layouts (About & Experience) */
