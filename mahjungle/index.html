@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mah-Jungle! - Isak Darke's Portfolio</title>
+    <meta name="description" content="Currently in development: an Aztec-inspired Mahjong game for PC and mobile by Isak Darke.">
+    
+    <!-- OpenGraph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://saffta.github.io/mahjungle/">
+    <meta property="og:title" content="Mah-Jungle! - Isak Darke's Portfolio">
+    <meta property="og:description" content="Mah-Jungle! is a vibrant, animal-themed twist on the classic Mahjong puzzle.">
+    <meta property="og:image" content="assets/banner.png">
+
+    <!-- Fonts & Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Play:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <!-- Background -->
+    <div class="starfield"></div>
+
+    <header class="header">
+        <nav class="nav-container">
+            <div class="logo">ID</div>
+            <ul class="nav-links">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../aboutme/index.html">About Me</a></li>
+                <li><a href="../experience/index.html">Experience</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="case-study-container">
+        <!-- Hero Section -->
+        <section class="case-study-hero">
+            <div class="hero-content">
+                <div class="hero-poster">
+                    <img src="assets/banner.png" alt="Mah-Jungle! Banner" class="poster-img zoomable">
+                </div>
+                <div class="hero-text">
+                    <div class="role">IN DEVELOPMENT</div>
+                    <h1 class="project-title">Mah-Jungle!</h1>
+                    <p class="project-description">
+                        Mah-Jungle! is an animal themed Mahjong puzzle game, featuring vibrant environments, 
+                        dynamic board layouts, and a fun, atmospheric soundtrack. Each world features its own levels and "Special Moves", obtained by matching a specific animal.
+                        Designed for mobile platforms, and currently in development. (Gallery, visuals and design subject to change.)
+                    </p>
+                    <div class="hero-buttons">
+                        <span class="glow-button">Coming Soon</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="project-details">
+            <div class="content-card glass-card reveal">
+                <h2>Game Development & QA Insights</h2>
+                <p>
+                    This is a solo project where I am handling both development and quality assurance. 
+                    The focus is on creating a fun, charming and replayable game, with an UI optimized for mobile devices. Primarily made for a younger and casual target audience in mind, but features arcade-type modes which give the more experienced gamer a challenge as well.
+                </p>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-value">Unity</span>
+                        <span class="stat-label">Engine</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">Solo</span>
+                        <span class="stat-label">Team Size</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">AI</span>
+                        <span class="stat-label">Developed</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Project Gallery -->
+        <h2 class="section-title reveal typing-text" data-text="Gallery"></h2>
+        <div class="project-gallery">
+
+            <!-- Mode select -->
+            <div class="gallery-item glass-card reveal">
+                <h3>Mode Select</h3>
+                <div class="image-wrapper">
+                    <img src="assets/modes.png" alt="Modes" class="gallery-img">
+                </div>
+                <p class="gallery-caption">Main menu, showcasing currently available modes. Classic mode with level progression, Time attack scrolls through levels and extend time for each tile pair matched / completed level.</p>
+            </div>
+
+            <!-- Level Selection -->
+            <div class="gallery-item glass-card reveal">
+                <h3>Level Selection</h3>
+                <div class="image-wrapper">
+                    <img src="assets/levelselect.png" alt="LevelSelect" class="gallery-img">
+                </div>
+                <p class="gallery-caption">Basic functional level selection screen. Currently 2 worlds implemented with 7 levels each. Features a calm mode toggle to disable time limit.</p>
+            </div>
+
+            <!-- Tongues -->
+            <div class="gallery-item glass-card reveal">
+                <h3>Tongue Animation</h3>
+                <div class="image-wrapper">
+                    <img src="assets/tongues.png" alt="Tongues" class="gallery-img">
+                </div>
+                <p class="gallery-caption">Fun little animation - the chameleon mascots shoot out their tongues and eat the tiles as they are matched.</p>
+            </div>
+
+            <!-- High Scores -->
+            <div class="gallery-item glass-card reveal">
+                <h3>High Score System</h3>
+                <div class="image-wrapper">
+                    <img src="assets/highscores.png" alt="HighScores" class="gallery-img">
+                </div>
+                <p class="gallery-caption">High scores are recorded for both modes. Classic mode for individual levels with "3-Star system", Time attack records total amount of levels cleared and matches made.</p>
+            </div>
+
+            <!-- Settings Menu -->
+            <div class="gallery-item glass-card reveal">
+                <h3>Settings Menu</h3>
+                <div class="image-wrapper">
+                    <img src="assets/settings.png" alt="Settings" class="gallery-img">
+                </div>
+                <p class="gallery-caption">Settings Menu - currently allows for audio level adjustments. When the game is paused, the board is hidden.</p>
+            </div>
+
+            <!-- Farm -->
+            <div class="gallery-item glass-card reveal">
+                <h3>Farm</h3>
+                <div class="image-wrapper">
+                    <img src="assets/farm.png" alt="Farm" class="gallery-img">
+                </div>
+                <p class="gallery-caption">Farm, the second world featured in the game.</p>
+            </div>
+        </div>
+
+        <!-- Contact Section -->
+        <section id="contact" class="contact-section">
+            <div class="contact-container reveal">
+                <h2 class="section-title typing-text" data-text="Get In Touch"></h2>
+                <div class="contact-info">
+                    <p class="email-link">Email: <a href="mailto:mr.isse@gmail.com">mr.isse@gmail.com</a></p>
+                    <p class="discord-tag">Discord: <span>isse1</span></p>
+                </div>
+                <div class="social-icons">
+                    <a href="https://www.linkedin.com/in/isak-darke-295914326/" target="_blank"><img src="../cdn-cgi/imagedelivery/s-dfVpmPR-aKHmwFNwAgnQ/3531f692e14d9a833eb5dda5e3b7ecfe21c4731f/public.png" alt="LinkedIn"></a>
+                    <a href="https://t.me/isakdarke" target="_blank"><img src="../cdn-cgi/imagedelivery/s-dfVpmPR-aKHmwFNwAgnQ/7647c305bc4c88753c3ed15866752f2c30811927/h%3d58.png" alt="Telegram"></a>
+                    <a href="https://wa.me/46701456730" target="_blank"><img src="../cdn-cgi/imagedelivery/s-dfVpmPR-aKHmwFNwAgnQ/f3d23dfd650ba01be8ba92ac16e625bf3d8977c7/public.png" alt="WhatsApp"></a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 Isak Darke. All rights reserved.</p>
+    </footer>
+
+    <script src="../script.js"></script>
+</body>
+</html>
