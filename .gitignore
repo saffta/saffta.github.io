@@ -1,0 +1,19 @@
+# AI Agent Configuration
+.agents/
+agents.MD
+
+# OS Metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Web Environment
+node_modules/
+.npm/
+package-lock.json
