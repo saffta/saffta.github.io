@@ -656,10 +656,22 @@ section {
 
 .tools-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 2.5rem 2rem; /* Optimized gap for better layout density */
     justify-items: center;
     margin-top: 3rem;
+}
+
+.tool-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: var(--transition);
+}
+
+.tool-item:hover {
+    z-index: 50; /* Ensure active item and label stay on top */
 }
 
 .tools-grid img {
@@ -667,12 +679,39 @@ section {
     height: 60px;
     object-fit: contain;
     transition: var(--transition);
-    filter: grayscale(0.5) opacity(0.8);
+    filter: grayscale(0.5) opacity(0.7);
+    cursor: default;
 }
 
-.tools-grid img:hover {
-    filter: grayscale(0) opacity(1) drop-shadow(0 0 10px var(--accent-glow));
-    transform: scale(1.2);
+.tool-item:hover img {
+    filter: grayscale(0) opacity(1) drop-shadow(0 0 15px var(--accent-glow));
+    transform: scale(1.2) translateY(-5px);
+}
+
+.tool-name {
+    position: absolute;
+    bottom: -30px; /* Moved further down to clear the glow */
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(5, 5, 5, 0.95); /* Darker backdrop for readability */
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--accent-color);
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-family: var(--font-heading);
+    color: var(--accent-color);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    text-shadow: 0 0 5px var(--accent-glow);
+}
+
+.tool-item:hover .tool-name {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
 /* --- Case Study Layout --- */
