@@ -1,3 +1,5 @@
+Backup saved at /app/frontend/public/prompt-checker-backup.html. Here's the complete fixed HTML file:
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -57,40 +59,63 @@
             border: 1px solid var(--glass-border);
         }
 
-        .backdrop, textarea {
-            width: 100%;
-            height: 100%;
+        /* CRITICAL FIX: These properties MUST be identical for highlights and textarea */
+        .highlights, textarea {
             padding: 20px;
             font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 14px;
+            font-weight: 400;
             line-height: 1.6;
             letter-spacing: 0.5px;
             white-space: pre-wrap;
             word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         .backdrop {
             position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             z-index: 1;
             background: rgba(255, 255, 255, 0.03);
             overflow: auto;
             pointer-events: none;
+            margin: 0;
+            border: 0;
+            box-sizing: border-box;
+        }
+
+        .highlights {
             color: transparent;
         }
 
         textarea {
-            display: block;
             position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             z-index: 2;
             background: transparent;
             color: var(--text-primary);
-            border: none;
             resize: none;
             outline: none;
+            overflow: auto;
+            margin: 0;
+            border: 0;
+            box-sizing: border-box;
         }
 
         textarea:focus {
             background: rgba(255, 255, 255, 0.05);
+        }
+
+        .highlights span {
+            border-radius: 3px;
+            color: transparent;
+            padding: 1px 0;
         }
 
         #output {
@@ -107,12 +132,6 @@
             padding: 4px 0;
             font-family: 'Play', sans-serif;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .highlights span {
-            border-radius: 3px;
-            color: #000;
-            padding: 1px 0;
         }
 
         .tool-footer {
@@ -216,7 +235,6 @@
 
     <script src="../script.js"></script>
     <script>
-        // Modified core logic from original tool
         const $backdrop = $('.backdrop');
         const $highlights = $('.highlights');
         const $textarea = $('textarea');
@@ -235,57 +253,83 @@
         ];
 
         function handleInput() {
-            let text = $textarea.val();
-            let textArray = text.split(',');
-            textArray = textArray.filter(n => n != '');
-            
-            const occurrences = textArray.reduce((acc, curr) => {
-                let cleaned = curr.trim().toLowerCase().replace(/[\])}[{(]/g, '').replace(/(:).*/, '');
-                acc[cleaned] = (acc[cleaned] || 0) + 1;
-                return acc;
-            }, {});
-            
-            let occurrencesWithColors = {};
-            let i = 0;
-            for (let [key, value] of Object.entries(occurrences)) {
-                let color = colorArray[i % colorArray.length];
-                i++;
-                occurrencesWithColors[key] = [key, value, color]; 
+          var text = $textarea.val();
+          var textArray = text.split(',');
+          textArray = textArray.filter(n => n.trim() !== '');
+
+          const occurrences = textArray.reduce(function (acc, curr) {
+            curr = curr.trim().toLowerCase().replace(/[\])}[{(]/g, '').replace(/(:).*/, '');
+            return acc[curr] ? ++acc[curr] : acc[curr] = 1, acc;
+          }, {});
+          
+          let occurrencesWithColors = {};
+          let i = 0;
+          
+          for (let [key, value] of Object.entries(occurrences)) {
+            let randomColor = colorArray[i];
+            i++;
+            if (randomColor === undefined) {
+              randomColor = colorArray[Math.floor(Math.random()*colorArray.length)];
             }
+            occurrencesWithColors[key.trim().toLowerCase().replace(/[\])}[{(]/g, '').replace(/(:).*/, '')] = [
+              textArray.find(item => item.trim().toLowerCase().replace(/[\])}[{(]/g, '').replace(/(:).*/, '') === key),
+              value, 
+              randomColor
+            ]; 
+          };
+          
+          textArray = textArray.map(function(element){
+            let key = element.trim().toLowerCase().replace(/[\])}[{(]/g, '').replace(/(:).*/, '');
+            let number_of_occurences = occurrencesWithColors[key][1];
+            let element_value = occurrencesWithColors[key][0];
+            let color = occurrencesWithColors[key][2];
             
-            let highlightedTags = textArray.map(element => {
-                let key = element.trim().toLowerCase().replace(/[\])}[{(]/g, '').replace(/(:).*/, '');
-                let count = occurrencesWithColors[key][1];
-                let color = occurrencesWithColors[key][2];
-                return (count > 1) ? `<span style="background-color: ${color}">${element}</span>` : element;
+            return (number_of_occurences > 1) ? `<span style="background-color: ${color}">${element}</span>`: element;
+          });
+          
+          newText = textArray.join(',');
+          $highlights.html(newText);
+
+          let similarWordsArray = [];
+          for (let [key, value] of Object.entries(occurrencesWithColors)) {
+            similarWordsArray.push({
+              key: key,
+              occurrences: occurrencesWithColors[key][1]
             });
-            
-            $highlights.html(highlightedTags.join(','));
-
-            // Display occurrences
-            let similarWordsArray = Object.values(occurrencesWithColors)
-                .map(item => ({ key: item[0], occurrences: item[1] }))
-                .filter(item => item.occurrences > 1)
-                .sort((a, b) => b.occurrences - a.occurrences);
-
-            let wordCountHtml = similarWordsArray.length > 0 
-                ? similarWordsArray.map(item => `<p class="word-occurrences"><strong>${item.occurrences}x</strong> ${item.key}</p>`).join('')
-                : '<p style="text-align:center; opacity:0.5;">No duplicates found.</p>';
-            
-            $('#output').html(wordCountHtml);
+          }
+          similarWordsArray = similarWordsArray.sort(function( a, b ) {
+            if ( a.occurrences > b.occurrences ){
+              return -1;
+            }
+            if ( a.occurrences < b.occurrences ){
+              return 1;
+            }
+            return 0;
+          });
+          
+          let wordCountHtml = ``;
+          similarWordsArray.forEach(function(item) {
+            wordCountHtml += `<p class="word-occurrences">${item.occurrences} x ${item.key}</p>`;
+          });
+          $('#output').html(wordCountHtml);
         }
 
         function handleScroll() {
-            $backdrop.scrollTop($textarea.scrollTop());
-            $backdrop.scrollLeft($textarea.scrollLeft());  
+          var scrollTop = $textarea.scrollTop();
+          $backdrop.scrollTop(scrollTop);
+          
+          var scrollLeft = $textarea.scrollLeft();
+          $backdrop.scrollLeft(scrollLeft);
         }
 
-        $textarea.on({
+        function bindEvents() {
+          $textarea.on({
             'input': handleInput,
             'scroll': handleScroll
-        });
+          });
+        }
 
-        // Initial call
+        bindEvents();
         handleInput();
     </script>
 </body>
