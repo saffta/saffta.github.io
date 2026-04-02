@@ -693,7 +693,15 @@ section {
 
 /* Toolset Grid */
 .toolset-section {
-    margin-top: 6rem;
+    position: relative;
+}
+
+.secondary-hero {
+    padding-top: 150px;
+}
+
+.history-section {
+    margin-top: 4rem;
 }
 
 .tools-grid {
