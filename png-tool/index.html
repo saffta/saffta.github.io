@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium PNG Outline Remover</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <h1>PNG Outline Remover</h1>
+        <p>Premium edge processing with Deep Removal and Lab Smoothing.</p>
+    </header>
+
+    <main class="main-container">
+        <!-- Left Side: Interactive Area -->
+        <section class="primary-column">
+            <div class="canvas-area" id="drop-zone">
+                <div id="canvas-container" class="hidden">
+                    <div class="comparison-view">
+                        <div class="canvas-item">
+                            <span class="badge">Original / Current</span>
+                            <canvas id="before-canvas"></canvas>
+                        </div>
+                        <div class="canvas-item">
+                            <span class="badge badge-accent">Result</span>
+                            <canvas id="after-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="upload-box" id="upload-box">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h2>Drag & Drop or Click</h2>
+                    <p>Select a PNG to begin</p>
+                </div>
+            </div>
+
+            <div class="action-bar">
+                <button id="upload-btn" class="btn secondary">
+                    <i class="fas fa-plus"></i> New Image
+                </button>
+                <button id="process-btn" class="btn primary">
+                    <i class="fas fa-play"></i> Process Result
+                </button>
+                <button id="apply-btn" class="btn accent">
+                    <i class="fas fa-check"></i> Apply Changes
+                </button>
+                <button id="download-btn" class="btn secondary">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+
+            <div class="lower-controls">
+                <!-- Group 1: Erosion -->
+                <div class="control-box">
+                    <h3>Edge Erosion</h3>
+                    <div class="input-row">
+                        <label>Stroke Width: <span id="stroke-width-val">1</span>px</label>
+                        <input type="range" id="stroke-width" min="0" max="10" value="1">
+                    </div>
+                    <div class="input-row">
+                        <label>Safety: <span id="safety-val">100</span>%</label>
+                        <input type="range" id="safety" min="0" max="100" value="100">
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="match-outer" checked>
+                        <label for="match-outer">Only Outer Outline</label>
+                    </div>
+                </div>
+
+                <!-- Group 2: Finishing & Infill -->
+                <div class="control-box-stack">
+                    <div class="control-box">
+                        <h3>Finishing</h3>
+                        <div class="input-row">
+                            <label>Smooth: <span id="smoothing-val">1</span>px</label>
+                            <input type="range" id="smoothing" min="0" max="5" value="1">
+                        </div>
+                    </div>
+                    <div class="control-box">
+                        <h3>Edge Color Infill</h3>
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="enable-infill">
+                            <label for="enable-infill">Enable Infill (Inpaint)</label>
+                        </div>
+                        <div class="input-row">
+                            <label>Alpha: <span id="infill-alpha-val">255</span></label>
+                            <input type="range" id="infill-alpha" min="0" max="255" value="255">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Side: Settings -->
+        <aside class="sidebar">
+            <div class="control-box">
+                <h3>Pre-processing</h3>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="enable-bg-removal">
+                    <label for="enable-bg-removal">Remove BG First</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="bg-only-outer" checked>
+                    <label for="bg-only-outer">Only Outer BG</label>
+                </div>
+                <div class="input-row">
+                    <label>BG Color</label>
+                    <div class="color-picker-wrapper">
+                        <input type="color" id="bg-color" value="#ffffff">
+                        <span class="color-val">#FFFFFF</span>
+                    </div>
+                </div>
+                <div class="input-row">
+                    <label>Threshold: <span id="bg-threshold-val">10</span>%</label>
+                    <input type="range" id="bg-threshold" min="0" max="100" value="10">
+                </div>
+            </div>
+
+            <div class="control-box">
+                <h3>Deep Removal (Crevices)</h3>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="deep-removal" checked>
+                    <label for="deep-removal">Enable Deep Removal</label>
+                </div>
+                <div class="input-row">
+                    <label>Matching Algorithm</label>
+                    <select id="algorithm" class="select-input">
+                        <option value="visual" selected>Visual (Lab)</option>
+                        <option value="euclidean">Euclid (RGB)</option>
+                    </select>
+                </div>
+                <div class="input-row">
+                    <label>Target Color</label>
+                    <div class="color-picker-wrapper">
+                        <input type="color" id="outline-color" value="#000000">
+                        <span class="color-val">Auto-detect</span>
+                    </div>
+                </div>
+                <div class="input-row">
+                    <label>Threshold: <span id="threshold-val">15</span>%</label>
+                    <input type="range" id="threshold" min="0" max="100" value="15">
+                </div>
+                <div class="input-row">
+                    <label>Search Depth: <span id="depth-val">2</span>px</label>
+                    <input type="range" id="depth" min="1" max="1000" value="2">
+                </div>
+            </div>
+            
+            <div class="status-box">
+                <span class="status-badge" id="status-badge">Ready for upload</span>
+            </div>
+        </aside>
+    </main>
+
+    <input type="file" id="file-input" class="hidden" accept="image/png">
+
+
+    <input type="file" id="file-input" class="hidden" accept="image/png">
+
+    <script src="PNGOutlineRemover.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
