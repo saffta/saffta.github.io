@@ -103,15 +103,7 @@ Object.keys(inputs).forEach(key => {
 let activePicker = 'outline-color';
 inputs.bgColor.addEventListener('click', () => activePicker = 'bg-color');
 inputs.outlineColor.addEventListener('click', () => activePicker = 'outline-color');
-beforeCanvas.addEventListener('mousedown', pickColor);
-beforeCanvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    pickColor({
-        clientX: touch.clientX,
-        clientY: touch.clientY
-    });
-});
+beforeCanvas.addEventListener('click', pickColor);
 
 function pickColor(e) {
     if (!baseImageData) return;
