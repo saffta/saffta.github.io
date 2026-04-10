@@ -3,163 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium PNG Outline Remover</title>
-    <link rel="stylesheet" href="index.css">
+    <title>PNG Outline Remover</title>
+    <meta name="description" content="Local-first PNG edge processing tool with deep removal and color infill.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Play:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
-    <header>
-        <h1>PNG Outline Remover</h1>
-        <p>Premium edge processing with Deep Removal and Lab Smoothing.</p>
+    <!-- Background Starfield Animation -->
+    <div class="starfield"></div>
+
+    <header class="header sticky">
+        <nav class="nav-container">
+            <a href="https://drive.google.com/uc?export=download&id=1mLMzOK8MwdeImhkF-xeOccvMnYHw3D43" target="_blank" class="logo" title="Download CV">
+                RESUME
+            </a>
+            <ul class="nav-links">
+                <li><a href="../">Home</a></li>
+                <li><a href="../aboutme/">About Me</a></li>
+                <li><a href="../experience/">Experience</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <div class="header-socials">
+                <a href="https://github.com/saffta" target="_blank" title="GitHub"><img src="../experience/assets/github.svg" alt="GitHub Logo"></a>
+                <a href="https://www.linkedin.com/in/isak-darke-295914326/" target="_blank" title="LinkedIn"><img src="../cdn-cgi/imagedelivery/s-dfVpmPR-aKHmwFNwAgnQ/3531f692e14d9a833eb5dda5e3b7ecfe21c4731f/public.png" alt="LinkedIn Logo"></a>
+            </div>
+        </nav>
     </header>
 
-    <main class="main-container">
-        <!-- Left Side: Interactive Area -->
-        <section class="primary-column">
-            <div class="canvas-area" id="drop-zone">
-                <div id="canvas-container" class="hidden">
-                    <div class="comparison-view">
-                        <div class="canvas-item">
-                            <span class="badge">Original / Current</span>
-                            <canvas id="before-canvas"></canvas>
-                        </div>
-                        <div class="canvas-item">
-                            <span class="badge badge-accent">Result</span>
-                            <canvas id="after-canvas"></canvas>
-                        </div>
+    <main>
+        <div class="tool-section secondary-hero">
+            <div class="container">
+                <div class="tool-container reveal">
+                    <div class="tool-header">
+                        <h1>Background & Outline Removal</h1>
+                        <p>High-performance background removal and edge processing for images. Works entirely in your browser.</p>
                     </div>
-                </div>
-                
-                <div class="upload-box" id="upload-box">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                    <h2>Drag & Drop or Click</h2>
-                    <p>Select a PNG to begin</p>
+
+                    <div class="main-container">
+                        <!-- Interactive Area -->
+                        <div class="primary-column">
+                            <div class="canvas-area" id="drop-zone">
+                                <div id="canvas-container" class="hidden">
+                                    <div class="comparison-view">
+                                        <div class="canvas-item">
+                                            <span class="badge">Original / Current</span>
+                                            <canvas id="before-canvas"></canvas>
+                                        </div>
+                                        <div class="canvas-item">
+                                            <span class="badge badge-accent">Result</span>
+                                            <canvas id="after-canvas"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="upload-box" id="upload-box">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <h2>Drag & Drop or Click</h2>
+                                    <p>Select any image to begin</p>
+                                </div>
+                            </div>
+                            <div class="status-box">
+                                <span class="status-badge" id="status-badge">Ready for upload</span>
+                            </div>
+                            <div class="action-bar">
+
+                                <button id="upload-btn" class="btn secondary">
+                                    <i class="fas fa-plus"></i> New Image
+                                </button>
+                                <button id="process-btn" class="btn primary">
+                                    <i class="fas fa-play"></i> Process
+                                </button>
+                                <button id="apply-btn" class="btn accent">
+                                    <i class="fas fa-check"></i> Apply
+                                </button>
+                                <button id="download-btn" class="btn secondary">
+                                    <i class="fas fa-download"></i> Download
+                                </button>
+                            </div>
+
+                            <div class="lower-controls">
+                                <!-- Group 1: Erosion -->
+                                <div class="control-box">
+                                    <h3>Edge Erosion</h3>
+                                    <div class="input-row">
+                                        <label>Stroke: <span id="stroke-width-val">1</span>px</label>
+                                        <input type="range" id="stroke-width" min="0" max="10" value="1">
+                                    </div>
+                                    <div class="input-row">
+                                        <label>Safety: <span id="safety-val">100</span>%</label>
+                                        <input type="range" id="safety" min="0" max="100" value="100">
+                                    </div>
+                                    <div class="checkbox-row">
+                                        <input type="checkbox" id="match-outer" checked>
+                                        <label for="match-outer">Only Outer Outline</label>
+                                    </div>
+                                </div>
+
+                                <!-- Group 2: Finishing & Infill -->
+                                <div class="control-box-stack">
+                                    <div class="control-box">
+                                        <h3>Finishing</h3>
+                                        <div class="input-row">
+                                            <label>Smooth: <span id="smoothing-val">1</span>px</label>
+                                            <input type="range" id="smoothing" min="0" max="5" value="1">
+                                        </div>
+                                    </div>
+                                    <div class="control-box">
+                                        <h3>Color Infill</h3>
+                                        <div class="checkbox-row">
+                                            <input type="checkbox" id="enable-infill">
+                                            <label for="enable-infill">Enable Infill</label>
+                                        </div>
+                                        <div class="input-row">
+                                            <label>Alpha: <span id="infill-alpha-val">255</span></label>
+                                            <input type="range" id="infill-alpha" min="0" max="255" value="255">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sidebar Settings -->
+                        <aside class="sidebar">
+                            <div class="control-box">
+                                <h3>Pre-processing</h3>
+                                <div class="checkbox-row">
+                                    <input type="checkbox" id="enable-bg-removal">
+                                    <label for="enable-bg-removal">Remove BG First</label>
+                                </div>
+                                <div class="checkbox-row">
+                                    <input type="checkbox" id="bg-only-outer" checked>
+                                    <label for="bg-only-outer">Only Outer BG</label>
+                                </div>
+                                <div class="input-row">
+                                    <label>BG Color</label>
+                                    <div class="color-picker-wrapper">
+                                        <input type="color" id="bg-color" value="#ffffff">
+                                        <span class="color-val">#FFFFFF</span>
+                                    </div>
+                                </div>
+                                <div class="input-row">
+                                    <label>BG Threshold: <span id="bg-threshold-val">10</span>%</label>
+                                    <input type="range" id="bg-threshold" min="0" max="100" value="10">
+                                </div>
+                            </div>
+
+                            <div class="control-box">
+                                <h3>Deep Removal</h3>
+                                <div class="checkbox-row">
+                                    <input type="checkbox" id="deep-removal" checked>
+                                    <label for="deep-removal">Enable</label>
+                                </div>
+                                <div class="input-row">
+                                    <label>Algorithm</label>
+                                    <select id="algorithm" class="select-input">
+                                        <option value="visual" selected>Visual (Lab)</option>
+                                        <option value="euclidean">Euclid (RGB)</option>
+                                    </select>
+                                </div>
+                                <div class="input-row">
+                                    <label>Target Color</label>
+                                    <div class="color-picker-wrapper">
+                                        <input type="color" id="outline-color" value="#000000">
+                                        <span class="color-val">Auto-detect</span>
+                                    </div>
+                                </div>
+                                <div class="input-row">
+                                    <label>Threshold: <span id="threshold-val">15</span>%</label>
+                                    <input type="range" id="threshold" min="0" max="100" value="15">
+                                </div>
+                                <div class="input-row">
+                                    <label>Depth: <span id="depth-val">2</span>px</label>
+                                    <input type="range" id="depth" min="1" max="1000" value="2">
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <div class="action-bar">
-                <button id="upload-btn" class="btn secondary">
-                    <i class="fas fa-plus"></i> New Image
-                </button>
-                <button id="process-btn" class="btn primary">
-                    <i class="fas fa-play"></i> Process Result
-                </button>
-                <button id="apply-btn" class="btn accent">
-                    <i class="fas fa-check"></i> Apply Changes
-                </button>
-                <button id="download-btn" class="btn secondary">
-                    <i class="fas fa-download"></i> Download
-                </button>
-            </div>
-
-            <div class="lower-controls">
-                <!-- Group 1: Erosion -->
-                <div class="control-box">
-                    <h3>Edge Erosion</h3>
-                    <div class="input-row">
-                        <label>Stroke Width: <span id="stroke-width-val">1</span>px</label>
-                        <input type="range" id="stroke-width" min="0" max="10" value="1">
-                    </div>
-                    <div class="input-row">
-                        <label>Safety: <span id="safety-val">100</span>%</label>
-                        <input type="range" id="safety" min="0" max="100" value="100">
-                    </div>
-                    <div class="checkbox-row">
-                        <input type="checkbox" id="match-outer" checked>
-                        <label for="match-outer">Only Outer Outline</label>
-                    </div>
+        <!-- Contact Section -->
+        <section id="contact" class="contact-section">
+            <div class="contact-container reveal">
+                <h2 class="section-title typing-text" data-text="Get In Touch"></h2>
+                <div class="contact-info">
+                    <p class="email-link">Email: <a href="mailto:mr.isse@gmail.com">mr.isse@gmail.com</a></p>
+                    <p class="discord-tag">Discord: <span>isse1</span></p>
                 </div>
-
-                <!-- Group 2: Finishing & Infill -->
-                <div class="control-box-stack">
-                    <div class="control-box">
-                        <h3>Finishing</h3>
-                        <div class="input-row">
-                            <label>Smooth: <span id="smoothing-val">1</span>px</label>
-                            <input type="range" id="smoothing" min="0" max="5" value="1">
-                        </div>
-                    </div>
-                    <div class="control-box">
-                        <h3>Edge Color Infill</h3>
-                        <div class="checkbox-row">
-                            <input type="checkbox" id="enable-infill">
-                            <label for="enable-infill">Enable Infill (Inpaint)</label>
-                        </div>
-                        <div class="input-row">
-                            <label>Alpha: <span id="infill-alpha-val">255</span></label>
-                            <input type="range" id="infill-alpha" min="0" max="255" value="255">
-                        </div>
-                    </div>
+                <div class="social-icons">
+                    <a href="https://github.com/saffta" target="_blank" title="GitHub"><img src="../experience/assets/github.svg" alt="GitHub"></a>
+                    <a href="https://www.linkedin.com/in/isak-darke-295914326/" target="_blank"><img src="../cdn-cgi/imagedelivery/s-dfVpmPR-aKHmwFNwAgnQ/3531f692e14d9a833eb5dda5e3b7ecfe21c4731f/public.png" alt="LinkedIn"></a>
+                    <a href="https://t.me/isakdarke" target="_blank"><img src="../cdn-cgi/imagedelivery/s-dfVpmPR-aKHmwFNwAgnQ/7647c305bc4c88753c3ed15866752f2c30811927/h%3d58.png" alt="Telegram"></a>
+                    <a href="https://wa.me/46701456730" target="_blank"><img src="../cdn-cgi/imagedelivery/s-dfVpmPR-aKHmwFNwAgnQ/f3d23dfd650ba01be8ba92ac16e625bf3d8977c7/public.png" alt="WhatsApp"></a>
                 </div>
             </div>
         </section>
-
-        <!-- Right Side: Settings -->
-        <aside class="sidebar">
-            <div class="control-box">
-                <h3>Pre-processing</h3>
-                <div class="checkbox-row">
-                    <input type="checkbox" id="enable-bg-removal">
-                    <label for="enable-bg-removal">Remove BG First</label>
-                </div>
-                <div class="checkbox-row">
-                    <input type="checkbox" id="bg-only-outer" checked>
-                    <label for="bg-only-outer">Only Outer BG</label>
-                </div>
-                <div class="input-row">
-                    <label>BG Color</label>
-                    <div class="color-picker-wrapper">
-                        <input type="color" id="bg-color" value="#ffffff">
-                        <span class="color-val">#FFFFFF</span>
-                    </div>
-                </div>
-                <div class="input-row">
-                    <label>Threshold: <span id="bg-threshold-val">10</span>%</label>
-                    <input type="range" id="bg-threshold" min="0" max="100" value="10">
-                </div>
-            </div>
-
-            <div class="control-box">
-                <h3>Deep Removal (Crevices)</h3>
-                <div class="checkbox-row">
-                    <input type="checkbox" id="deep-removal" checked>
-                    <label for="deep-removal">Enable Deep Removal</label>
-                </div>
-                <div class="input-row">
-                    <label>Matching Algorithm</label>
-                    <select id="algorithm" class="select-input">
-                        <option value="visual" selected>Visual (Lab)</option>
-                        <option value="euclidean">Euclid (RGB)</option>
-                    </select>
-                </div>
-                <div class="input-row">
-                    <label>Target Color</label>
-                    <div class="color-picker-wrapper">
-                        <input type="color" id="outline-color" value="#000000">
-                        <span class="color-val">Auto-detect</span>
-                    </div>
-                </div>
-                <div class="input-row">
-                    <label>Threshold: <span id="threshold-val">15</span>%</label>
-                    <input type="range" id="threshold" min="0" max="100" value="15">
-                </div>
-                <div class="input-row">
-                    <label>Search Depth: <span id="depth-val">2</span>px</label>
-                    <input type="range" id="depth" min="1" max="1000" value="2">
-                </div>
-            </div>
-            
-            <div class="status-box">
-                <span class="status-badge" id="status-badge">Ready for upload</span>
-            </div>
-        </aside>
     </main>
 
-    <input type="file" id="file-input" class="hidden" accept="image/png">
+    <footer class="footer">
+        <p>&copy; 2026 Isak Darke. All rights reserved.</p>
+    </footer>
 
+    <input type="file" id="file-input" class="hidden" accept="image/*">
 
-    <input type="file" id="file-input" class="hidden" accept="image/png">
-
+    <script src="../script.js"></script>
     <script src="PNGOutlineRemover.js"></script>
     <script src="app.js"></script>
 </body>
