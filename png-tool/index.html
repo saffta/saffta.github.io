@@ -43,7 +43,12 @@
                 <div class="tool-container reveal">
                     <div class="tool-header">
                         <h1>Background & Outline Removal</h1>
-                        <p>High-performance background removal and edge processing for images. Works entirely in your browser.</p>
+                        <p>High-performance edge processing and AI image upscaling entirely in your browser.</p>
+                        
+                        <div class="tool-tabs">
+                            <button class="tab-btn active" data-tab="outline">Outline Removal</button>
+                            <button class="tab-btn" data-tab="upscale">AI Upscaler</button>
+                        </div>
                     </div>
 
                     <div class="main-container">
@@ -88,7 +93,8 @@
                                 </button>
                             </div>
 
-                            <div class="lower-controls">
+                            <!-- Outline Lower Controls -->
+                            <div class="lower-controls" id="outline-lower-controls">
                                 <!-- Group 1: Erosion -->
                                 <div class="control-box">
                                     <h3>Edge Erosion</h3>
@@ -128,10 +134,26 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Upscale Lower Controls -->
+                            <div class="lower-controls hidden" id="upscale-lower-controls">
+                                <div class="control-box-stack" style="width: 100%; text-align: center; padding: 2rem;">
+                                    <h3>AI Upscaling Active</h3>
+                                    <p style="color: var(--text-secondary); margin-top: 1rem;">
+                                        AI upscaling uses your local device's GPU to reconstruct missing details. 
+                                        The first time you run it, a model file will download in the background.
+                                    </p>
+                                    <div class="progress-bar-container hidden" id="upscale-progress-container" style="margin-top: 1rem; width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                                        <div id="upscale-progress-bar" style="width: 0%; height: 100%; background: var(--accent-color); transition: width 0.3s ease;"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Sidebar Settings -->
                         <aside class="sidebar">
+                            <!-- Outline Sidebar Settings -->
+                            <div id="outline-sidebar-controls" class="tab-panel active">
                             <div class="control-box">
                                 <h3>Pre-processing</h3>
                                 <div class="checkbox-row">
@@ -184,6 +206,26 @@
                                     <input type="range" id="depth" min="1" max="1000" value="2">
                                 </div>
                             </div>
+                            </div>
+
+                            <!-- Upscale Sidebar Settings -->
+                            <div id="upscale-sidebar-controls" class="tab-panel hidden">
+                            <div class="control-box">
+                                <h3>Output Resolution</h3>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <input type="number" id="out-width" class="select-input" style="width: 100%;" placeholder="Width">
+                                    <span style="color: var(--text-secondary); font-family: var(--font-pixel); font-size: 0.8rem;">X</span>
+                                    <input type="number" id="out-height" class="select-input" style="width: 100%;" placeholder="Height">
+                                </div>
+                                <div class="checkbox-row" style="margin-top: 1rem;">
+                                    <input type="checkbox" id="upscale-pixel-perfect">
+                                    <label for="upscale-pixel-perfect">Nearest Neighbor (Pixel Art)</label>
+                                </div>
+                                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">
+                                    <em>Uncheck to use AI Upscaling for photos & illustrations.</em>
+                                </p>
+                            </div>
+                            </div>
                         </aside>
                     </div>
                 </div>
@@ -214,6 +256,9 @@
 
     <input type="file" id="file-input" class="hidden" accept="image/*">
 
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/default-model@1.0.0/dist/umd/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/upscaler@1.0.0/dist/browser/umd/upscaler.min.js"></script>
     <script src="../script.js"></script>
     <script src="PNGOutlineRemover.js"></script>
     <script src="app.js"></script>
