@@ -43,7 +43,9 @@ const MODEL_DESCRIPTIONS = {
     pixel: 'Exact-pixel scaling, no AI. Crisp edges — ideal for pixel art.',
     slim: 'Fastest, smallest download. Softest result.',
     medium: 'Balanced sharpness vs. speed. Good general choice.',
-    thick: 'Sharpest result. Largest download, slowest processing.'
+    thick: 'Sharpest result. Largest download, slowest processing.',
+    anime: 'AnimeSharp V4 ×2 — sharpener for clean anime & line art. ~32 MB; seconds on GPU (WebGPU), minutes on CPU.',
+    restore: 'Real-ESRGAN Restore ×4 — rebuilds detail: deblurs & removes JPEG artifacts. Best for low-quality images. ~5 MB; CPU (~1-2 min).'
 };
 
 if (inputs.upscaleModel) {
@@ -385,20 +387,35 @@ async function processUpscale() {
         // result up to 4x with canvas interpolation re-blurs everything the model
         // sharpened; instead we pick the model scale that covers the target (x2/x3/x4,
         // extra x2 passes beyond that) and only ever DOWNscale to the exact size.
+        const onnxCfg = (window.OnnxUpscaler && window.OnnxUpscaler.models[modelKey]) || null;
         const scaleNeeded = Math.max(newWidth / baseImageData.width, newHeight / baseImageData.height, 1);
+        const stepScale = onnxCfg ? onnxCfg.scale : 2;
         const passes = [];
         let remaining = scaleNeeded;
-        const firstScale = remaining <= 2 ? 2 : (remaining <= 3 ? 3 : 4);
+        const firstScale = onnxCfg ? stepScale : (remaining <= 2 ? 2 : (remaining <= 3 ? 3 : 4));
         passes.push(firstScale);
         remaining /= firstScale;
         while (remaining > 1) {
-            passes.push(2);
-            remaining /= 2;
+            passes.push(stepScale);
+            remaining /= stepScale;
         }
 
         let workCanvas = rgbCanvas;
         for (let p = 0; p < passes.length; p++) {
             const scale = passes[p];
+            const onProgress = (percent) => {
+                const overall = (p + percent) / passes.length;
+                progressBar.style.width = `${Math.round(overall * 100)}%`;
+            };
+
+            if (onnxCfg) {
+                workCanvas = await window.OnnxUpscaler.upscaleOnce(modelKey, workCanvas, {
+                    progress: onProgress,
+                    status: (text) => updateStatus(text, true)
+                });
+                continue;
+            }
+
             const model = getModelForScale(modelKey, scale);
             if (!model) {
                 throw new Error(`Model "${modelKey}" x${scale} is not loaded (script tag missing or CDN blocked).`);
@@ -410,10 +427,7 @@ async function processUpscale() {
             const upscaledImgDataUrl = await upscalerCache[cacheKey].upscale(workCanvas, {
                 patchSize: 64,
                 padding: 8, // generous padding avoids soft seams at patch borders
-                progress: (percent) => {
-                    const overall = (p + percent) / passes.length;
-                    progressBar.style.width = `${Math.round(overall * 100)}%`;
-                }
+                progress: onProgress
             });
             const img = await loadImg(upscaledImgDataUrl);
             const c = document.createElement('canvas');
