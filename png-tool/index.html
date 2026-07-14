@@ -217,12 +217,21 @@
                                     <span style="color: var(--text-secondary); font-family: var(--font-pixel); font-size: 0.8rem;">X</span>
                                     <input type="number" id="out-height" class="select-input" style="width: 100%;" placeholder="Height">
                                 </div>
-                                <div class="checkbox-row" style="margin-top: 1rem;">
-                                    <input type="checkbox" id="upscale-pixel-perfect">
-                                    <label for="upscale-pixel-perfect">Nearest Neighbor (Pixel Art)</label>
+                            </div>
+
+                            <div class="control-box">
+                                <h3>Upscaling Model</h3>
+                                <div class="input-row">
+                                    <label>Model</label>
+                                    <select id="upscale-model" class="select-input">
+                                        <option value="pixel">Nearest Neighbor (No AI)</option>
+                                        <option value="slim" selected>ESRGAN Slim</option>
+                                        <option value="medium">ESRGAN Medium</option>
+                                        <option value="thick">ESRGAN Thick</option>
+                                    </select>
                                 </div>
-                                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">
-                                    <em>Uncheck to use AI Upscaling for photos & illustrations.</em>
+                                <p id="upscale-model-desc" style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">
+                                    <em>Fastest, smallest download. Softest result.</em>
                                 </p>
                             </div>
                             </div>
@@ -237,7 +246,7 @@
             <div class="contact-container reveal">
                 <h2 class="section-title typing-text" data-text="Get In Touch"></h2>
                 <div class="contact-info">
-                    <p class="email-link">Email: <a href="mailto:mr.isse@gmail.com">mr.isse@gmail.com</a></p>
+                    <p class="email-link">Email: <a href="/cdn-cgi/l/email-protection#a8c5da86c1dbdbcde8cfc5c9c1c486cbc7c5"><span class="__cf_email__" data-cfemail="8ce1fea2e5ffffe9ccebe1ede5e0a2efe3e1">[email&#160;protected]</span></a></p>
                     <p class="discord-tag">Discord: <span>isse1</span></p>
                 </div>
                 <div class="social-icons">
@@ -256,8 +265,17 @@
 
     <input type="file" id="file-input" class="hidden" accept="image/*">
 
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/default-model@1.0.0/dist/umd/index.min.js"></script>
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+    <!-- Model definition packages (tiny configs; the actual weights download lazily on first use) -->
+    <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/esrgan-slim@latest/dist/umd/2x.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/esrgan-slim@latest/dist/umd/3x.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/esrgan-slim@latest/dist/umd/4x.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/esrgan-medium@latest/dist/umd/2x.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/esrgan-medium@latest/dist/umd/3x.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/esrgan-medium@latest/dist/umd/4x.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/esrgan-thick@latest/dist/umd/2x.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/esrgan-thick@latest/dist/umd/3x.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/esrgan-thick@latest/dist/umd/4x.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/upscaler@1.0.0/dist/browser/umd/upscaler.min.js"></script>
     <script src="../script.js"></script>
     <script src="PNGOutlineRemover.js"></script>

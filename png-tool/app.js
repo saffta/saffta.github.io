@@ -35,8 +35,40 @@ const inputs = {
     infillAlpha: document.getElementById('infill-alpha'),
     outWidth: document.getElementById('out-width'),
     outHeight: document.getElementById('out-height'),
-    upscalePixelPerfect: document.getElementById('upscale-pixel-perfect')
+    upscaleModel: document.getElementById('upscale-model')
 };
+
+// AI model selection
+const MODEL_DESCRIPTIONS = {
+    pixel: 'Exact-pixel scaling, no AI. Crisp edges — ideal for pixel art.',
+    slim: 'Fastest, smallest download. Softest result.',
+    medium: 'Balanced sharpness vs. speed. Good general choice.',
+    thick: 'Sharpest result. Largest download, slowest processing.'
+};
+
+if (inputs.upscaleModel) {
+    inputs.upscaleModel.addEventListener('change', () => {
+        const desc = document.getElementById('upscale-model-desc');
+        if (desc) desc.innerHTML = `<em>${MODEL_DESCRIPTIONS[inputs.upscaleModel.value] || ''}</em>`;
+    });
+}
+
+const upscalerCache = {};
+
+function getModelForScale(key, scale) {
+    const prefix = { slim: 'ESRGANSlim', medium: 'ESRGANMedium', thick: 'ESRGANThick' }[key];
+    if (!prefix) return null;
+    return window[prefix + scale + 'x'] || null;
+}
+
+function loadImg(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+    });
+}
 
 const vals = {
     strokeWidth: document.getElementById('stroke-width-val'),
@@ -250,7 +282,8 @@ async function processUpscale() {
     
     const newWidth = parseInt(inputs.outWidth.value) || baseImageData.width;
     const newHeight = parseInt(inputs.outHeight.value) || baseImageData.height;
-    const pixelPerfect = inputs.upscalePixelPerfect.checked;
+    const modelKey = inputs.upscaleModel ? inputs.upscaleModel.value : 'slim';
+    const pixelPerfect = modelKey === 'pixel';
 
     // Nearest Neighbor (No AI)
     if (pixelPerfect) {
@@ -348,52 +381,81 @@ async function processUpscale() {
         rgbCanvas.getContext('2d').putImageData(bledData, 0, 0);
 
         // 3. Upscale the Solid RGB Image
-        const upscaler = new window.Upscaler();
-        const upscaledImgDataUrl = await upscaler.upscale(rgbCanvas, {
-            patchSize: 64, 
-            padding: 2,
-            progress: (percent) => {
-                progressBar.style.width = `${Math.round(percent * 100)}%`;
-            }
-        });
+        // Plan AI passes so the AI output is >= the target size. Stretching a 2x AI
+        // result up to 4x with canvas interpolation re-blurs everything the model
+        // sharpened; instead we pick the model scale that covers the target (x2/x3/x4,
+        // extra x2 passes beyond that) and only ever DOWNscale to the exact size.
+        const scaleNeeded = Math.max(newWidth / baseImageData.width, newHeight / baseImageData.height, 1);
+        const passes = [];
+        let remaining = scaleNeeded;
+        const firstScale = remaining <= 2 ? 2 : (remaining <= 3 ? 3 : 4);
+        passes.push(firstScale);
+        remaining /= firstScale;
+        while (remaining > 1) {
+            passes.push(2);
+            remaining /= 2;
+        }
 
-        const img = new Image();
-        img.onload = () => {
-            afterCanvas.width = newWidth;
-            afterCanvas.height = newHeight;
-            afterCtx.imageSmoothingEnabled = true;
-            afterCtx.imageSmoothingQuality = 'high';
-            afterCtx.clearRect(0, 0, newWidth, newHeight);
-            
-            // Draw AI Upscaled RGB
-            afterCtx.drawImage(img, 0, 0, img.width, img.height, 0, 0, newWidth, newHeight);
-            const finalImgData = afterCtx.getImageData(0, 0, newWidth, newHeight);
-            
-            // Scale the Alpha Mask using standard high-quality interpolation
-            const scaledAlphaCanvas = document.createElement('canvas');
-            scaledAlphaCanvas.width = newWidth;
-            scaledAlphaCanvas.height = newHeight;
-            const scaledAlphaCtx = scaledAlphaCanvas.getContext('2d');
-            scaledAlphaCtx.imageSmoothingEnabled = true;
-            scaledAlphaCtx.imageSmoothingQuality = 'high';
-            scaledAlphaCtx.drawImage(alphaCanvas, 0, 0, newWidth, newHeight);
-            const finalAlphaData = scaledAlphaCtx.getImageData(0, 0, newWidth, newHeight);
-            
-            // 4. Recombine Alpha Mask with AI RGB
-            for(let i=0; i<finalImgData.data.length; i+=4) {
-                finalImgData.data[i+3] = finalAlphaData.data[i]; // Apply grayscale mask to alpha channel
+        let workCanvas = rgbCanvas;
+        for (let p = 0; p < passes.length; p++) {
+            const scale = passes[p];
+            const model = getModelForScale(modelKey, scale);
+            if (!model) {
+                throw new Error(`Model "${modelKey}" x${scale} is not loaded (script tag missing or CDN blocked).`);
             }
-            afterCtx.putImageData(finalImgData, 0, 0);
-            
-            lastProcessedData = afterCtx.getImageData(0, 0, newWidth, newHeight);
-            updateStatus('AI Upscaling complete.');
-            progressBarContainer.classList.add('hidden');
-        };
-        img.src = upscaledImgDataUrl;
+            const cacheKey = `${modelKey}_x${scale}`;
+            if (!upscalerCache[cacheKey]) {
+                upscalerCache[cacheKey] = new window.Upscaler({ model });
+            }
+            const upscaledImgDataUrl = await upscalerCache[cacheKey].upscale(workCanvas, {
+                patchSize: 64,
+                padding: 8, // generous padding avoids soft seams at patch borders
+                progress: (percent) => {
+                    const overall = (p + percent) / passes.length;
+                    progressBar.style.width = `${Math.round(overall * 100)}%`;
+                }
+            });
+            const img = await loadImg(upscaledImgDataUrl);
+            const c = document.createElement('canvas');
+            c.width = img.width;
+            c.height = img.height;
+            c.getContext('2d').drawImage(img, 0, 0);
+            workCanvas = c;
+        }
+
+        afterCanvas.width = newWidth;
+        afterCanvas.height = newHeight;
+        afterCtx.imageSmoothingEnabled = true;
+        afterCtx.imageSmoothingQuality = 'high';
+        afterCtx.clearRect(0, 0, newWidth, newHeight);
+
+        // Draw AI Upscaled RGB (downscale-or-equal — never an up-stretch)
+        afterCtx.drawImage(workCanvas, 0, 0, workCanvas.width, workCanvas.height, 0, 0, newWidth, newHeight);
+        const finalImgData = afterCtx.getImageData(0, 0, newWidth, newHeight);
+
+        // Scale the Alpha Mask using standard high-quality interpolation
+        const scaledAlphaCanvas = document.createElement('canvas');
+        scaledAlphaCanvas.width = newWidth;
+        scaledAlphaCanvas.height = newHeight;
+        const scaledAlphaCtx = scaledAlphaCanvas.getContext('2d');
+        scaledAlphaCtx.imageSmoothingEnabled = true;
+        scaledAlphaCtx.imageSmoothingQuality = 'high';
+        scaledAlphaCtx.drawImage(alphaCanvas, 0, 0, newWidth, newHeight);
+        const finalAlphaData = scaledAlphaCtx.getImageData(0, 0, newWidth, newHeight);
+
+        // 4. Recombine Alpha Mask with AI RGB
+        for(let i=0; i<finalImgData.data.length; i+=4) {
+            finalImgData.data[i+3] = finalAlphaData.data[i]; // Apply grayscale mask to alpha channel
+        }
+        afterCtx.putImageData(finalImgData, 0, 0);
+
+        lastProcessedData = afterCtx.getImageData(0, 0, newWidth, newHeight);
+        updateStatus('AI Upscaling complete.');
+        progressBarContainer.classList.add('hidden');
         
     } catch (error) {
         console.error(error);
-        updateStatus('Error during AI upscaling.');
+        updateStatus(error && error.message ? `Upscale failed: ${error.message}` : 'Error during AI upscaling.');
         progressBarContainer.classList.add('hidden');
     }
 }
