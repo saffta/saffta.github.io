@@ -15,6 +15,7 @@ const canvasContainer = document.getElementById('canvas-container');
 
 let baseImageData = null; // The "Base" for the current process
 let lastProcessedData = null; // The result of the current process
+let lastUnsharpenedData = null; // AI result before the sharpen pass (lets the slider re-apply instantly)
 
 // UI Elements & State
 const inputs = {
@@ -35,7 +36,8 @@ const inputs = {
     infillAlpha: document.getElementById('infill-alpha'),
     outWidth: document.getElementById('out-width'),
     outHeight: document.getElementById('out-height'),
-    upscaleModel: document.getElementById('upscale-model')
+    upscaleModel: document.getElementById('upscale-model'),
+    upscaleSharpen: document.getElementById('upscale-sharpen')
 };
 
 // AI model selection
@@ -45,7 +47,8 @@ const MODEL_DESCRIPTIONS = {
     medium: 'Balanced sharpness vs. speed. Good general choice.',
     thick: 'Sharpest result. Largest download, slowest processing.',
     anime: 'AnimeSharp V4 ×2 — sharpener for clean anime & line art. ~32 MB; seconds on GPU (WebGPU), minutes on CPU.',
-    restore: 'Real-ESRGAN Restore ×4 — rebuilds detail: deblurs & removes JPEG artifacts. Best for low-quality images. ~5 MB; CPU (~1-2 min).'
+    restore: 'Real-ESRGAN Restore ×4 — rebuilds detail: deblurs & removes JPEG artifacts. Best for low-quality images. ~5 MB; CPU (~1-2 min).',
+    anime6b: 'Real-ESRGAN Anime 6B ×4 — Upscayl\'s "Digital Art" model. Strongest anime restoration. ~18 MB; CPU only (~5-10 min).'
 };
 
 if (inputs.upscaleModel) {
@@ -56,6 +59,68 @@ if (inputs.upscaleModel) {
 }
 
 const upscalerCache = {};
+
+// Unsharp mask: sharpened = original + strength * (original - blurred).
+// Separable 5-tap box blur; RGB only, alpha untouched.
+function applyUnsharpMask(imgData, amount) {
+    const w = imgData.width, h = imgData.height, src = imgData.data;
+    const strength = amount * 1.2;
+    const r = 2, div = 2 * r + 1;
+    const tmp = new Float32Array(w * h * 3);
+    const blur = new Float32Array(w * h * 3);
+    // horizontal pass
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            let R = 0, G = 0, B = 0;
+            for (let dx = -r; dx <= r; dx++) {
+                const xx = Math.min(w - 1, Math.max(0, x + dx));
+                const i = (y * w + xx) * 4;
+                R += src[i]; G += src[i + 1]; B += src[i + 2];
+            }
+            const o = (y * w + x) * 3;
+            tmp[o] = R / div; tmp[o + 1] = G / div; tmp[o + 2] = B / div;
+        }
+    }
+    // vertical pass
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            let R = 0, G = 0, B = 0;
+            for (let dy = -r; dy <= r; dy++) {
+                const yy = Math.min(h - 1, Math.max(0, y + dy));
+                const i = (yy * w + x) * 3;
+                R += tmp[i]; G += tmp[i + 1]; B += tmp[i + 2];
+            }
+            const o = (y * w + x) * 3;
+            blur[o] = R / div; blur[o + 1] = G / div; blur[o + 2] = B / div;
+        }
+    }
+    // combine (Uint8ClampedArray clamps for us)
+    for (let p = 0, i = 0; p < w * h; p++, i += 4) {
+        const b = p * 3;
+        src[i] = src[i] + strength * (src[i] - blur[b]);
+        src[i + 1] = src[i + 1] + strength * (src[i + 1] - blur[b + 1]);
+        src[i + 2] = src[i + 2] + strength * (src[i + 2] - blur[b + 2]);
+    }
+}
+
+// Live re-apply: sharpening is cheap, so slider changes update the existing result
+// without re-running the AI. Debounced to keep dragging smooth on large images.
+let sharpenTimer = null;
+if (inputs.upscaleSharpen) {
+    inputs.upscaleSharpen.addEventListener('input', () => {
+        if (!lastUnsharpenedData) return;
+        clearTimeout(sharpenTimer);
+        sharpenTimer = setTimeout(() => {
+            const img = new ImageData(new Uint8ClampedArray(lastUnsharpenedData.data), lastUnsharpenedData.width, lastUnsharpenedData.height);
+            const pct = parseInt(inputs.upscaleSharpen.value) || 0;
+            if (pct > 0) applyUnsharpMask(img, pct / 100);
+            afterCanvas.width = img.width;
+            afterCanvas.height = img.height;
+            afterCtx.putImageData(img, 0, 0);
+            lastProcessedData = img;
+        }, 120);
+    });
+}
 
 function getModelForScale(key, scale) {
     const prefix = { slim: 'ESRGANSlim', medium: 'ESRGANMedium', thick: 'ESRGANThick' }[key];
@@ -81,7 +146,8 @@ const vals = {
     bgColor: document.querySelector('#bg-color + .color-val'),
     outlineColor: document.querySelector('#outline-color + .color-val'),
     safety: document.getElementById('safety-val'),
-    infillAlpha: document.getElementById('infill-alpha-val')
+    infillAlpha: document.getElementById('infill-alpha-val'),
+    upscaleSharpen: document.getElementById('upscale-sharpen-val')
 };
 
 // Event Listeners
@@ -111,12 +177,32 @@ tabBtns.forEach(btn => {
         // Toggle lower controls
         document.getElementById('outline-lower-controls').classList.toggle('hidden', currentTab !== 'outline');
         document.getElementById('upscale-lower-controls').classList.toggle('hidden', currentTab !== 'upscale');
+
+        // Upload box copy per tab
+        const upTitle = document.getElementById('upload-title');
+        const upSub = document.getElementById('upload-subtitle');
+        if (upTitle && upSub) {
+            if (currentTab === 'outline') {
+                upTitle.textContent = 'Select or drag an image to begin';
+                upSub.style.display = 'none';
+            } else {
+                upTitle.textContent = 'Drag & Drop or Click';
+                upSub.textContent = 'Select an image — or drop several to batch upscale';
+                upSub.style.display = '';
+            }
+        }
+
+        if (batchFiles.length) updateBatchPanelMode();
     });
 });
 
 uploadBox.addEventListener('click', () => imageInput.click());
 imageInput.addEventListener('change', handleFile);
 processBtn.addEventListener('click', () => {
+    if (batchFiles.length) {
+        processBatch();
+        return;
+    }
     if (currentTab === 'outline') {
         processOutline();
     } else {
@@ -193,8 +279,15 @@ function pickColor(e) {
 }
 
 function handleFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || !files.length) return;
+    if (files.length > 1) {
+        enterBatchMode(Array.from(files));
+        if (imageInput) imageInput.value = '';
+        return;
+    }
+    exitBatchMode();
+    const file = files[0];
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -229,12 +322,54 @@ function handleFile(e) {
 }
 
 function resetToUpload() {
+    exitBatchMode();
     baseImageData = null;
     lastProcessedData = null;
+    lastUnsharpenedData = null;
     canvasContainer.classList.add('hidden');
     uploadBox.classList.remove('hidden');
     updateStatus('Ready for upload');
     imageInput.value = '';
+}
+
+// tfjs's WebGL backend accumulates shader programs & GPU memory per unique image size;
+// long batches can degrade or lose the GPU context ("Failed to compile fragment shader" /
+// "Failed to link vertex and fragment shaders"). This disposes everything and rebuilds
+// the backend so a retry starts from a clean context.
+async function resetTfjsBackend() {
+    for (const k in upscalerCache) {
+        try { upscalerCache[k].dispose(); } catch (e) { /* ignore */ }
+        delete upscalerCache[k];
+    }
+    try {
+        if (window.tf) {
+            tf.engine().disposeVariables();
+            tf.engine().reset();
+            await tf.setBackend('webgl');
+            await tf.ready();
+        }
+    } catch (e) {
+        console.warn('tfjs backend reset failed:', e);
+    }
+}
+
+function buildOutlineOptions() {
+    return {
+        strokeWidth: parseInt(inputs.strokeWidth.value),
+        smoothing: parseInt(inputs.smoothing.value),
+        threshold: parseFloat(inputs.threshold.value),
+        depth: parseInt(inputs.depth.value),
+        matchOuter: inputs.matchOuter.checked,
+        deepRemoval: inputs.deepRemoval.checked,
+        backgroundColor: inputs.enableBgRemoval.checked ? hexToRgb(inputs.bgColor.value) : null,
+        backgroundColorThreshold: parseFloat(inputs.bgThreshold.value),
+        backgroundOnlyOuter: inputs.bgOnlyOuter.checked,
+        outlineColor: hexToRgb(inputs.outlineColor.value),
+        algorithm: inputs.algorithm.value,
+        safetyThreshold: parseFloat(inputs.safety.value),
+        infill: inputs.enableInfill.checked,
+        infillAlpha: parseInt(inputs.infillAlpha.value)
+    };
 }
 
 function processOutline() {
@@ -250,22 +385,7 @@ function processOutline() {
             baseImageData.height
         );
 
-        const options = {
-            strokeWidth: parseInt(inputs.strokeWidth.value),
-            smoothing: parseInt(inputs.smoothing.value),
-            threshold: parseFloat(inputs.threshold.value),
-            depth: parseInt(inputs.depth.value),
-            matchOuter: inputs.matchOuter.checked,
-            deepRemoval: inputs.deepRemoval.checked,
-            backgroundColor: inputs.enableBgRemoval.checked ? hexToRgb(inputs.bgColor.value) : null,
-            backgroundColorThreshold: parseFloat(inputs.bgThreshold.value),
-            backgroundOnlyOuter: inputs.bgOnlyOuter.checked,
-            outlineColor: hexToRgb(inputs.outlineColor.value),
-            algorithm: inputs.algorithm.value,
-            safetyThreshold: parseFloat(inputs.safety.value),
-            infill: inputs.enableInfill.checked,
-            infillAlpha: parseInt(inputs.infillAlpha.value)
-        };
+        const options = buildOutlineOptions();
 
         remover.process(imageData, options);
 
@@ -461,6 +581,12 @@ async function processUpscale() {
         for(let i=0; i<finalImgData.data.length; i+=4) {
             finalImgData.data[i+3] = finalAlphaData.data[i]; // Apply grayscale mask to alpha channel
         }
+
+        // 5. Optional post-AI sharpen (cache the unsharpened result so the slider can re-apply live)
+        lastUnsharpenedData = new ImageData(new Uint8ClampedArray(finalImgData.data), newWidth, newHeight);
+        const sharpenPct = inputs.upscaleSharpen ? (parseInt(inputs.upscaleSharpen.value) || 0) : 0;
+        if (sharpenPct > 0) applyUnsharpMask(finalImgData, sharpenPct / 100);
+
         afterCtx.putImageData(finalImgData, 0, 0);
 
         lastProcessedData = afterCtx.getImageData(0, 0, newWidth, newHeight);
@@ -474,9 +600,246 @@ async function processUpscale() {
     }
 }
 
+// ===== Batch upscaling =====
+// Reuses the single-image pipeline (processUpscale) per file: same model, sharpen,
+// alpha handling and progress bar — then zips the results with original names.
+let batchFiles = [];
+let batchZipBlob = null;
+let batchRunning = false;
+
+function renderBatchList() {
+    const list = document.getElementById('batch-list');
+    if (!list) return;
+    list.innerHTML = '';
+    batchFiles.forEach(item => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:0.4rem 0.6rem; background:rgba(255,255,255,0.04); border-radius:6px; font-size:0.85rem;';
+        const name = document.createElement('span');
+        name.textContent = item.file.name + (item.w ? ' (' + item.w + '\u00d7' + item.h + ')' : '');
+        name.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+        const st = document.createElement('span');
+        st.textContent = item.status;
+        st.style.cssText = 'color:var(--text-secondary); flex-shrink:0;';
+        if (item.status === 'done') st.style.color = 'var(--accent-color)';
+        if (item.status.indexOf('failed') === 0) st.style.color = '#e05555';
+        row.appendChild(name);
+        row.appendChild(st);
+        list.appendChild(row);
+    });
+}
+
+function updateBatchPanelMode() {
+    const row = document.getElementById('batch-scale-row');
+    const hint = document.getElementById('batch-hint');
+    if (!row || !hint) return;
+    const outline = currentTab === 'outline';
+    row.style.display = outline ? 'none' : 'flex';
+    hint.textContent = outline
+        ? 'Outline settings come from the sidebar — press Process to start, results download as one ZIP.'
+        : 'Model & Sharpen come from the sidebar — press Process to start, results download as one ZIP.';
+}
+
+function enterBatchMode(files) {
+    batchFiles = files.map(f => ({ file: f, status: 'queued' }));
+    batchZipBlob = null;
+    baseImageData = null;
+    lastProcessedData = null;
+    lastUnsharpenedData = null;
+    canvasContainer.classList.add('hidden');
+    uploadBox.classList.add('hidden');
+    const panel = document.getElementById('batch-panel');
+    if (panel) panel.classList.remove('hidden');
+    updateBatchPanelMode();
+    renderBatchList();
+    updateStatus(batchFiles.length + ' files queued — press Process');
+}
+
+function exitBatchMode() {
+    batchFiles = [];
+    batchZipBlob = null;
+    const panel = document.getElementById('batch-panel');
+    if (panel) panel.classList.add('hidden');
+}
+
+function loadImageFile(file) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not load ' + file.name)); };
+        img.src = url;
+    });
+}
+
+function canvasToBlob(canvas) {
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+}
+
+function readImageSize(file) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(url); resolve({ w: img.naturalWidth, h: img.naturalHeight }); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('unreadable')); };
+        img.src = url;
+    });
+}
+
+async function processBatch() {
+    if (batchRunning || !batchFiles.length) return;
+    if (typeof JSZip === 'undefined') {
+        updateStatus('JSZip failed to load \u2014 check your connection.');
+        return;
+    }
+    batchRunning = true;
+    batchZipBlob = null;
+    const outlineMode = currentTab === 'outline';
+    const factor = parseInt(document.getElementById('batch-scale').value) || 2;
+    const deliverySel = document.getElementById('batch-delivery');
+    const folderMode = deliverySel && deliverySel.value === 'folder';
+    let dirHandle = null;
+    if (folderMode) {
+        if (window.showDirectoryPicker) {
+            try {
+                // Must happen right after the Process click (user activation)
+                dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+            } catch (e) {
+                batchRunning = false;
+                if (e && e.name === 'AbortError') {
+                    updateStatus('Folder selection cancelled.');
+                } else {
+                    // e.g. SecurityError: embedded/sandboxed pages (like a preview iframe) can't open the picker
+                    updateStatus('Folder access blocked here (' + (e && e.name ? e.name : 'error') + ') \u2014 open the tool in its own tab, or use ZIP mode.');
+                }
+                return;
+            }
+        } else {
+            // No API: only per-file downloads are possible. Ask upfront instead of surprising mid-batch.
+            const goOn = confirm('This browser can\u2019t write to a folder directly (Brave: enable brave://flags/#file-system-access-api).\n\nContinue with one download per file? (Cancel to stop \u2014 switch "Save as" to ZIP instead.)');
+            if (!goOn) {
+                batchRunning = false;
+                updateStatus('Batch cancelled \u2014 use ZIP mode, or enable the folder API.');
+                return;
+            }
+            updateStatus('No folder API \u2014 each file will download individually.');
+        }
+    }
+    const zip = folderMode ? null : new JSZip();
+    let ok = 0;
+    let skipped = 0;
+
+    // Sort by input dimensions so same-sized files run back-to-back — tfjs compiles
+    // WebGL shaders per unique size, so grouping avoids repeated recompilation.
+    if (!outlineMode) {
+        updateStatus('Reading image sizes\u2026', true);
+        for (const item of batchFiles) {
+            try {
+                const dim = await readImageSize(item.file);
+                item.w = dim.w; item.h = dim.h;
+            } catch (e) {
+                item.w = 0; item.h = 0; // unreadable — sorts first, fails in the main loop with a proper message
+            }
+        }
+        batchFiles.sort((a, b) => (a.w * a.h - b.w * b.h) || (a.w - b.w) || a.file.name.localeCompare(b.file.name));
+        renderBatchList();
+    }
+
+    for (let n = 0; n < batchFiles.length; n++) {
+        const item = batchFiles[n];
+        const outName = item.file.name.replace(/\.[^.]+$/, '') + '.png';
+        // Restart support: skip files already present in the target folder
+        if (dirHandle) {
+            try {
+                await dirHandle.getFileHandle(outName);
+                item.status = 'skipped (already in folder)';
+                skipped++;
+                renderBatchList();
+                continue;
+            } catch (e) { /* not there yet — process it */ }
+        }
+        item.status = 'processing (' + (n + 1) + '/' + batchFiles.length + ')\u2026';
+        renderBatchList();
+        try {
+            const img = await loadImageFile(item.file);
+            const c = document.createElement('canvas');
+            c.width = img.width;
+            c.height = img.height;
+            const cctx = c.getContext('2d');
+            cctx.drawImage(img, 0, 0);
+            baseImageData = cctx.getImageData(0, 0, img.width, img.height);
+            lastProcessedData = null;
+            if (outlineMode) {
+                const imageData = new ImageData(new Uint8ClampedArray(baseImageData.data), img.width, img.height);
+                remover.process(imageData, buildOutlineOptions());
+                lastProcessedData = imageData;
+                await new Promise(r => setTimeout(r, 0)); // keep the UI responsive between files
+            } else {
+                inputs.outWidth.value = img.width * factor;
+                inputs.outHeight.value = img.height * factor;
+                await processUpscale();
+                if (!lastProcessedData) {
+                    // GPU context likely degraded mid-batch — rebuild the backend and retry once
+                    item.status = 'retrying\u2026';
+                    renderBatchList();
+                    await resetTfjsBackend();
+                    await processUpscale();
+                }
+            }
+            if (!lastProcessedData) throw new Error(statusBadge ? statusBadge.textContent : 'processing failed');
+            const outC = document.createElement('canvas');
+            outC.width = lastProcessedData.width;
+            outC.height = lastProcessedData.height;
+            outC.getContext('2d').putImageData(lastProcessedData, 0, 0);
+            const blob = await canvasToBlob(outC);
+            if (dirHandle) {
+                const fh = await dirHandle.getFileHandle(outName, { create: true });
+                const w = await fh.createWritable();
+                await w.write(blob);
+                await w.close();
+                item.status = 'saved';
+            } else if (folderMode) {
+                // No File System Access API — fall back to a per-file download
+                const link = document.createElement('a');
+                link.download = outName;
+                link.href = URL.createObjectURL(blob);
+                link.click();
+                setTimeout(() => URL.revokeObjectURL(link.href), 30000);
+                item.status = 'downloaded';
+            } else {
+                zip.file(outName, blob);
+                item.status = 'done';
+            }
+            ok++;
+        } catch (err) {
+            console.error(err);
+            item.status = 'failed: ' + String(err && err.message ? err.message : 'error').slice(0, 60);
+        }
+        renderBatchList();
+    }
+    baseImageData = null;
+    lastProcessedData = null;
+    lastUnsharpenedData = null;
+    if (ok > 0 && !folderMode) {
+        updateStatus('Zipping\u2026', true);
+        batchZipBlob = await zip.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.download = (outlineMode ? 'outlined_' : 'upscaled_' + factor + 'x_') + Date.now() + '.zip';
+        link.href = URL.createObjectURL(batchZipBlob);
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 30000);
+        updateStatus('Batch complete: ' + ok + '/' + batchFiles.length + ' files \u2014 ZIP downloaded.');
+    } else if (ok > 0 || skipped > 0) {
+        updateStatus('Batch complete: ' + ok + ' saved' + (skipped ? ', ' + skipped + ' already done' : '') + ' of ' + batchFiles.length + '.');
+    } else {
+        updateStatus('Batch failed \u2014 no files processed.');
+    }
+    batchRunning = false;
+}
+
 function applyChanges() {
     if (!lastProcessedData) return;
     baseImageData = lastProcessedData;
+    lastUnsharpenedData = null; // result is now the base; slider applies to the NEXT run
     beforeCanvas.width = baseImageData.width;
     beforeCanvas.height = baseImageData.height;
     beforeCtx.putImageData(baseImageData, 0, 0);
@@ -491,6 +854,14 @@ function applyChanges() {
 }
 
 function downloadImage() {
+    if (batchZipBlob) {
+        const link = document.createElement('a');
+        link.download = 'upscaled_batch.zip';
+        link.href = URL.createObjectURL(batchZipBlob);
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 30000);
+        return;
+    }
     if (!lastProcessedData) return;
     const link = document.createElement('a');
     link.download = `cleaned_${Date.now()}.png`;

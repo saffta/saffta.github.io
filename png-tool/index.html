@@ -68,10 +68,33 @@
                                     </div>
                                 </div>
                                 
+                                <div id="batch-panel" class="hidden" style="width: 100%; text-align: left; padding: 1.5rem;">
+                                    <h3 style="margin-bottom: 0.75rem;">Batch Upscale</h3>
+                                    <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap;">
+                                        <div id="batch-scale-row" style="display: flex; gap: 0.75rem; align-items: center;">
+                                            <label style="color: var(--text-secondary); font-size: 0.9rem;">Scale</label>
+                                            <select id="batch-scale" class="select-input" style="width: auto;">
+                                                <option value="2" selected>2×</option>
+                                                <option value="3">3×</option>
+                                                <option value="4">4×</option>
+                                                <option value="8">8×</option>
+                                            </select>
+                                        </div>
+                                        <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                            <label style="color: var(--text-secondary); font-size: 0.9rem;">Save as</label>
+                                            <select id="batch-delivery" class="select-input" style="width: auto;">
+                                                <option value="zip" selected>One ZIP at the end</option>
+                                                <option value="folder">Folder — each file as it finishes</option>
+                                            </select>
+                                        </div>
+                                        <span id="batch-hint" style="color: var(--text-secondary); font-size: 0.8rem;">Model &amp; Sharpen come from the sidebar — press Process to start, results download as one ZIP.</span>
+                                    </div>
+                                    <div id="batch-list" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 320px; overflow-y: auto;"></div>
+                                </div>
                                 <div class="upload-box" id="upload-box">
                                     <i class="fas fa-cloud-upload-alt"></i>
-                                    <h2>Drag & Drop or Click</h2>
-                                    <p>Select any image to begin</p>
+                                    <h2 id="upload-title">Select or drag an image to begin</h2>
+                                    <p id="upload-subtitle" style="display: none;">Select an image — or drop several to batch upscale</p>
                                 </div>
                             </div>
                             <div class="status-box">
@@ -230,10 +253,20 @@
                                         <option value="thick">ESRGAN Thick</option>
                                         <option value="anime">AnimeSharp V4 ×2 (Anime)</option>
                                         <option value="restore">Real-ESRGAN Restore ×4</option>
+                                        <!-- Uncomment after converting the model — see anime-upscaler.js MODELS comment:
+                                        <option value="anime6b">Real-ESRGAN Anime 6B ×4</option>
+                                        -->
                                     </select>
                                 </div>
                                 <p id="upscale-model-desc" style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">
                                     <em>Fastest, smallest download. Softest result.</em>
+                                </p>
+                                <div class="input-row" style="margin-top: 1rem;">
+                                    <label>Sharpen: <span id="upscale-sharpen-val">0</span>%</label>
+                                    <input type="range" id="upscale-sharpen" min="0" max="100" value="0">
+                                </div>
+                                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">
+                                    <em>Applied after AI. Adjust anytime — updates the result instantly.</em>
                                 </p>
                             </div>
                             </div>
@@ -248,7 +281,7 @@
             <div class="contact-container reveal">
                 <h2 class="section-title typing-text" data-text="Get In Touch"></h2>
                 <div class="contact-info">
-                    <p class="email-link">Email: <a href="/cdn-cgi/l/email-protection#f29f80dc9b818197b2959f939b9edc919d9f"><span class="__cf_email__" data-cfemail="e78a95c98e949482a7808a868e8bc984888a">[email&#160;protected]</span></a></p>
+                    <p class="email-link">Email: <a href="/cdn-cgi/l/email-protection#1d706f33746e6e785d7a707c7471337e7270"><span class="__cf_email__" data-cfemail="462b34682f35352306212b272f2a6825292b">[email&#160;protected]</span></a></p>
                     <p class="discord-tag">Discord: <span>isse1</span></p>
                 </div>
                 <div class="social-icons">
@@ -265,7 +298,7 @@
         <p>&copy; 2026 Isak Darke. All rights reserved.</p>
     </footer>
 
-    <input type="file" id="file-input" class="hidden" accept="image/*">
+    <input type="file" id="file-input" class="hidden" accept="image/*" multiple>
 
     <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
     <!-- Model definition packages (tiny configs; the actual weights download lazily on first use) -->
@@ -280,6 +313,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/esrgan-thick@latest/dist/umd/4x.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/upscaler@1.0.0/dist/browser/umd/upscaler.min.js"></script>
     <script src="../script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="PNGOutlineRemover.js"></script>
     <script src="anime-upscaler.js"></script>
     <script src="app.js"></script>
